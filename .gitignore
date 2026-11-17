@@ -1,0 +1,12 @@
+__pycache__/
+*.egg-info/
+*.pt
+*.npz
+!tests/data/*.npz
+assets/
+runs/
+*.h5ad
+.ipynb_checkpoints/
+# Release checkpoint is intentionally versioned
+!scflora_v1.pt
+!scflora_v1.pt.sha256

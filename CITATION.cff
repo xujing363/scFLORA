@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use scFLORA, please cite the article below."
+title: "scFLORA"
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/xujing363/scFLORA"
+authors:
+  - family-names: Xu
+    given-names: Jing
+  - family-names: Zhang
+    given-names: Hao
+  - family-names: Yang
+    given-names: Jianzhao
+  - family-names: Dong
+    given-names: Nanqing
+  - family-names: Zhu
+    given-names: Xin-Guang
+  - family-names: Chen
+    given-names: Luonan
+preferred-citation:
+  type: article
+  title: "scFLORA: A generative virtual cell model for genome-wide perturbations across plant species"
+  authors:
+    - family-names: Xu
+      given-names: Jing
+    - family-names: Zhang
+      given-names: Hao
+    - family-names: Yang
+      given-names: Jianzhao
+    - family-names: Dong
+      given-names: Nanqing
+    - family-names: Zhu
+      given-names: Xin-Guang
+    - family-names: Chen
+      given-names: Luonan
+  year: 2026
