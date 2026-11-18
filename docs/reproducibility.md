@@ -1,39 +1,57 @@
-# Reproducibility
+# Reproducibility protocol
 
-## Equivalence with the code used in the paper
+This repository reproduces **inference from the released checkpoint**. It does not claim to reproduce pretraining. Every published result should be accompanied by a machine-readable run manifest containing the fields below.
 
-The released package is a re-implementation of the original training and evaluation code, with the
-same parameter names apart from a renaming map and the same numerics. It was checked against the
-original code on real data using the same checkpoint and the same cells, on one H100 GPU with TF32.
+## Required manifest
 
-| Check | Data | Max abs. difference |
-|---|---|---|
-| Cell embeddings, fp32 and bf16 | *A. thaliana* root (2,000 cells), soybean root (2,000 cells) | 0 (bit-identical) |
-| Cell embeddings, species not in pretraining (families by nearest centroid) | *Lycopodium japonicum* (2,000 cells) | 0 |
-| Species-wise HVG2000 panel with `support="input"`, bf16, batch 128 | *A. thaliana*, soybean | 0 |
-| Genome-wide log predicted rates (27,628 genes × 16 cells) | *A. thaliana* | 3.8 × 10⁻⁶ |
-| Virtual-knockout allocation score (2,000 candidate genes) | *A. thaliana* | 9.5 × 10⁻⁷ |
-| Masked training loss, same random generator | *A. thaliana* | 1.6 × 10⁻⁵ (relative 3 × 10⁻⁶) |
+```yaml
+repository_commit: <git commit>
+checkpoint_sha256: <sha256>
+family_space_sha256: <sha256>
+gene_table_sha256: <sha256>
+input_sha256: <sha256>
+command: <complete command line>
+software: environment.yml
+python: "3.10"
+torch: "2.6.0"
+device: <GPU model or CPU>
+precision: bf16|fp32
+seed: 42
+n_cells: <integer>
+n_input_genes: <integer>
+```
 
-`tests/test_pretrained.py` repeats a subset of these checks against reference outputs stored in
-`tests/data/`.
+## Input contract
 
-## Settings
+- Matrix orientation is cells × genes.
+- Values are non-negative raw counts. Do not pass log-normalized values.
+- `var_names` must match the canonical identifiers in the species table after version and prefix normalization.
+- Preserve cell order, gene order, and observation identifiers in the output.
+- For comparisons, freeze the split, QC thresholds, HVG panel, target list, and metric before running scFLORA or any comparator.
 
-| Setting | Options | Default |
-|---|---|---|
-| Input genes | all genes in the gene table / a panel (`genes=`, `--hvg`) | all genes |
-| Support of the predicted family measure | `genome` / `input` | `genome` |
-| Precision | bfloat16 autocast / float32 (`amp=False`, `--fp32`) | bfloat16 |
+## Analysis settings
 
-Settings used in the paper:
+| Analysis | Input support | Precision | Output validation |
+|---|---|---|---|
+| Full-genome embedding | `genome` | bf16 or fp32 | shape `(n_cells, 512)` |
+| HVG integration | `input` | bf16 | identical panel definition across methods |
+| Predicted expression | genome | fp32 recommended | rates non-negative and depth-consistent |
+| Virtual knockout | genome | fp32 recommended | same wild-type cells and depth in both arms |
 
-* **Cross-species integration benchmarks.** 2,000 HVGs selected per species (scanpy `seurat` flavor on
-  log-normalized counts, restricted to genes in the gene table), `support="input"`, bfloat16,
-  batch size 128.
-* **Predicted expression and virtual knockouts.** All genes, `support="genome"`, float32.
+The encoder is deterministic for a fixed device, precision, input order, and checkpoint. GPU and CPU floating-point results can differ within the tolerances tested in `tests/test_pretrained.py`.
 
-## Random seeds
+## Verification gates
 
-Inference is deterministic. Pretraining used seed 42 for model initialization, sampling and masking.
-The train/validation split used seed 12345 + 42.
+1. Verify all SHA-256 checksums.
+2. Run `pytest tests -q`.
+3. Run `python examples/demo.py --assets assets/`.
+4. Confirm the demo reports `matches reference: True`.
+5. Archive the manifest and output checksum with the result.
+
+## Reporting perturbation analyses
+
+Report the wild-type cell count, target genes, target detection rate, candidate universe, whether cells were encoded jointly, depth handling, and the exact score definition. Do not compare rankings produced with different cell panels, species gene tables, or support settings.
+
+## Known scope boundaries
+
+The checkpoint is frozen. The public package does not expose pretraining, corpus construction, or manuscript-specific analysis orchestration. Those materials are not needed for downstream inference and are not represented as reproducible by this release.
