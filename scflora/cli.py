@@ -4,13 +4,10 @@
   embed           cell embeddings of an .h5ad with raw counts
   predict         genome-wide predicted expression for cells of an .h5ad
   knockout        virtual knockout of one or more genes on wild-type cells
-  pack            index and pack a pretraining corpus
-  train           pretrain scFLORA
 """
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 
@@ -84,29 +81,6 @@ def main(argv=None) -> None:
     q.add_argument("--candidates", default=None, help="file with candidate gene ids (default: all measured genes)")
     q.add_argument("--out", required=True, help="output prefix")
 
-    q = sub.add_parser("pack", help="index and pack a pretraining corpus")
-    q.add_argument("--manifest", required=True)
-    q.add_argument("--gene-dir", required=True)
-    q.add_argument("--species", required=True, help="text file, one pretraining species per line (order fixed)")
-    q.add_argument("--family-space", required=True)
-    q.add_argument("--col2tok-dir", default=None)
-    q.add_argument("--cache-dir", required=True)
-    q.add_argument("--pack-dir", required=True)
-
-    q = sub.add_parser("train", help="pretrain scFLORA")
-    q.add_argument("--config", default=None, help="JSON with model/data/loss/train sections")
-    q.add_argument("--manifest", required=True)
-    q.add_argument("--gene-dir", required=True)
-    q.add_argument("--species", required=True)
-    q.add_argument("--family-space", required=True)
-    q.add_argument("--col2tok-dir", default=None)
-    q.add_argument("--pack-dir", required=True)
-    q.add_argument("--exclude-mask", default=None)
-    q.add_argument("--out-dir", required=True)
-    q.add_argument("--devices", default="0", help="comma-separated GPU ids, e.g. 0,1,2")
-    q.add_argument("--max-steps", type=int, default=0, help="stop early (smoke tests)")
-    q.add_argument("--threads", type=int, default=16)
-
     a = p.parse_args(argv)
 
     if a.cmd == "protein-embed":
@@ -151,22 +125,6 @@ def main(argv=None) -> None:
                 a.out + "_response.tsv", sep="\t", index=False)
         return
 
-    if a.cmd == "pack":
-        from .config import DataConfig
-        from .corpus import Corpus
-        from .train import build_index
-        species = [l.strip() for l in open(a.species) if l.strip()]
-        idx = build_index(a.gene_dir, species, a.family_space)
-        Corpus(a.manifest, idx, a.cache_dir, DataConfig(), col2tok_dir=a.col2tok_dir).pack(a.pack_dir)
-        return
-
-    if a.cmd == "train":
-        _threads(a.threads)
-        from .config import DataConfig, LossConfig, ModelConfig, TrainConfig, from_dict
-        from .train import train
-        cfg = json.load(open(a.config)) if a.config else {}
-        train(a, from_dict(ModelConfig, cfg.get("model", {})), from_dict(DataConfig, cfg.get("data", {})),
-              from_dict(LossConfig, cfg.get("loss", {})), from_dict(TrainConfig, cfg.get("train", {})))
 
 
 if __name__ == "__main__":
