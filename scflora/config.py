@@ -65,7 +65,7 @@ class TrainConfig:
     grad_clip: float = 1.0
     batch_size: int = 32           # nominal batch size used for length bucketing
     accumulate: int = 2
-    max_epochs: int = 15
+    max_epochs: int = 2
     precision: str = "bf16"        # bf16 | fp32
     species_alpha: float = 0.6     # species sampling p_s proportional to n_s ** alpha
     seed: int = 42
